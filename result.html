@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>រាត្រីលំហអាកាស - Music Player</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* ប្តូរផ្ទៃខាងក្រោយជារូបភាពប្រុសស្អាត និងផែនដី */
+            background: url('https://w0.peakpx.com/wallpaper/429/180/HD-wallpaper-lonely-boy-watching-earth-from-moon-thumbnail.jpg') no-repeat center center;
+            background-size: cover;
+            font-family: 'Khmer OS Battambang', sans-serif;
+            overflow: hidden;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4); /* បន្ថែមភាពងងឹតបន្តិចឱ្យមើលអក្សរច្បាស់ */
+            z-index: 1;
+        }
+
+        .player-card {
+            position: relative;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 35px;
+            width: 85%;
+            max-width: 360px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        }
+
+        /* រូបភាពវិលជុំវិញ (Disk) */
+        .disk {
+            width: 130px;
+            height: 130px;
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+            border-radius: 50%;
+            margin: 0 auto 25px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: rotate 10s linear infinite;
+            animation-play-state: paused;
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.5);
+        }
+
+        .disk.playing { animation-play-state: running; }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        h2 { font-size: 22px; margin-bottom: 5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        p { font-size: 14px; opacity: 0.8; margin-bottom: 30px; }
+
+        /* ប៊ូតុងបញ្ជា */
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            transition: 0.3s;
+        }
+
+        .btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.3); }
+
+        .btn-play {
+            width: 70px;
+            height: 70px;
+            font-size: 28px;
+            background: #fff;
+            color: #000;
+        }
+
+        audio { display: none; }
+
+        /* គ្រាប់ពន្លឺផ្កាយក្នុងលំហ */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: twinkle 3s infinite;
+            z-index: 2;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay"></div>
+
+    <div class="player-card">
+        <div class="disk" id="disk">
+            <span style="font-size: 50px;">🌍</span>
+        </div>
+        <h2 id="title">បទចម្រៀងទី ១</h2>
+        <p id="artist">កំពុងចាក់ចម្រៀងបេះត្រជាក់</p>
+
+        <div class="controls">
+            <button class="btn" onclick="prevTrack()">⏮</button>
+            <button class="btn btn-play" id="playBtn" onclick="togglePlay()">▶</button>
+            <button class="btn" onclick="nextTrack()">⏭</button>
+        </div>
+
+        <audio id="mainAudio" src="https://files.catbox.moe/rtkvkd.mp3"></audio>
+    </div>
+
+    <script>
+        const audio = document.getElementById('mainAudio');
+        const playBtn = document.getElementById('playBtn');
+        const disk = document.getElementById('disk');
+        const title = document.getElementById('title');
+
+        // បញ្ជីបទចម្រៀង - អ្នកអាចដាក់ Link បទផ្សេងទៀតរបស់អ្នកនៅទីនេះ
+        const playlist = [
+            { name: "បទចម្រៀងទី ១", link: "https://files.catbox.moe/rtkvkd.mp3" },
+            { name: "បទចម្រៀងទី ២", link: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" }
+        ];
+
+        let trackIndex = 0;
+
+        function loadTrack(index) {
+            audio.src = playlist[index].link;
+            title.innerText = playlist[index].name;
+        }
+
+        function togglePlay() {
+            if (audio.paused) {
+                audio.play();
+                playBtn.innerText = "⏸";
+                disk.classList.add('playing');
+            } else {
+                audio.pause();
+                playBtn.innerText = "▶";
+                disk.classList.remove('playing');
+            }
+        }
+
+        function nextTrack() {
+            trackIndex = (trackIndex + 1) % playlist.length;
+            loadTrack(trackIndex);
+            audio.play();
+            playBtn.innerText = "⏸";
+            disk.classList.add('playing');
+        }
+
+        function prevTrack() {
+            trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
+            loadTrack(trackIndex);
+            audio.play();
+            playBtn.innerText = "⏸";
+            disk.classList.add('playing');
+        }
+
+        // បង្កើតផ្កាយព្រិចៗ
+        for (let i = 0; i < 60; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            const size = Math.random() * 3 + 'px';
+            star.style.width = size;
+            star.style.height = size;
+            star.style.top = Math.random() * 100 + 'vh';
+            star.style.left = Math.random() * 100 + 'vw';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            document.body.appendChild(star);
+        }
+    </script>
+</body>
+</html>
